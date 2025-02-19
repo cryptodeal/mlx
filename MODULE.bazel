@@ -4,5 +4,6 @@ module(
 
 bazel_dep(name = "rules_apple", version = "3.13.0", repo_name = "build_bazel_rules_apple")
 bazel_dep(name = "fmt", version = "11.0.2")
+bazel_dep(name = "range-v3", version = "0.12.0")
 metal_cpp = use_extension("third_party/metal_cpp.bzl", "metal_cpp")
 use_repo(metal_cpp, "metal_cpp")
