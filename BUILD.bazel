@@ -5,6 +5,8 @@ apple_metal_library(
     copts = [
         "-Iexternal/mlx~",
         "-Iexternal/mlx~/mlx/backend/metal/kernels/metal_3_1",
+        "-I.",
+        "-Imlx/backend/metal/kernels/metal_3_1",
         "-D_METAL_",
     ],
     srcs = [
