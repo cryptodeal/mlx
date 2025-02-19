@@ -1,0 +1,5 @@
+cc_binary(
+    name = "gather",
+    srcs = ["gather.cpp"],
+    deps = ["@mlx//:libmlx", "@range-v3"]
+)
