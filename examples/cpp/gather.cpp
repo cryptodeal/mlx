@@ -56,23 +56,21 @@ int32_t currentStartIndex(mx::array& index_scalar) {
       return index_scalar.item<int32_t>();
   }
 }
+
 /**
  * TODO (@cyptodeal): Implement `stablehlo_gather`, which maps
  * `stablehlo::GatherOp` -> `mx::gather`.
  *
  * Given the following Inputs:
- * - `operand`: Tensor
- * - `start_indices`: Tensor
- * - `offset_dims`: std::vector<int64_t> (aka llvm::SmallVector<int64_t>)
- * - `collapsed_slice_dims`: std::vector<int64_t> (aka
- * llvm::SmallVector<int64_t>)
- * - `operand_batching_dims`: std::vector<int64_t> (aka
- * llvm::SmallVector<int64_t>)
- * - `start_indices_batching_dims`: std::vector<int64_t> (aka
- * llvm::SmallVector<int64_t>)
- * - `start_index_map`: std::vector<int64_t> (aka llvm::SmallVector<int64_t>)
+ * - `operand`: mx::array
+ * - `start_indices`: mx::array
+ * - `offset_dims`: std::vector<int64_t>
+ * - `collapsed_slice_dims`: std::vector<int64_t>
+ * - `operand_batching_dims`: std::vector<int64_t>
+ * - `start_indices_batching_dims`: std::vector<int64_t>
+ * - `start_index_map`: std::vector<int64_t>
  * - `index_vector_dim`: int64_t
- * - `slice_sizes`: std::vector<int64_t> (aka llvm::SmallVector<int64_t>)
+ * - `slice_sizes`: std::vector<int64_t>
  * - `indices_are_sorted`: bool (maybe we implement?)
  *
  * Given we know:
@@ -124,7 +122,6 @@ mx::array stablehlo_gather(
     std::vector<int32_t> sin_start(start_indices.ndim());
     std::vector<int32_t> sin_stop(start_indices.ndim());
     unsigned batch_idx_count = 0;
-
     for (auto i = 0; i < start_indices.ndim(); i++) {
       if (index_vector_dim == static_cast<int64_t>(i)) {
         sin_start[i] = 0;
@@ -200,7 +197,7 @@ mx::array stablehlo_gather(
 
     result = mx::slice_update(
         result,
-        mx::flatten(mx::slice(operand, operand_index, operand_stop)),
+        mx::slice(operand, operand_index, operand_stop),
         result_index,
         result_stop);
   }
