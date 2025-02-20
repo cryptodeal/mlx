@@ -3,3 +3,9 @@ cc_binary(
     srcs = ["gather.cpp"],
     deps = ["@mlx//:libmlx", "@range-v3"]
 )
+
+cc_binary(
+    name = "scatter",
+    srcs = ["scatter.cpp"],
+    deps = ["@mlx//:libmlx", "@range-v3"]
+)
