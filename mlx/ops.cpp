@@ -2205,13 +2205,20 @@ array argmax(
 }
 
 /** Returns a sorted copy of the flattened array. */
-array sort(const array& a, StreamOrDevice s /* = {} */) {
+array sort(
+    const array& a,
+    ComparatorType comparator,
+    StreamOrDevice s /* = {} */) {
   int size = a.size();
-  return sort(reshape(a, {size}, s), 0, s);
+  return sort(reshape(a, {size}, s), 0, comparator, s);
 }
 
 /** Returns a sorted copy of the array along a given axis. */
-array sort(const array& a, int axis, StreamOrDevice s /* = {} */) {
+array sort(
+    const array& a,
+    int axis,
+    ComparatorType comparator,
+    StreamOrDevice s /* = {} */) {
   // Check for valid axis
   if (axis + static_cast<int>(a.ndim()) < 0 ||
       axis >= static_cast<int>(a.ndim())) {
@@ -2222,17 +2229,27 @@ array sort(const array& a, int axis, StreamOrDevice s /* = {} */) {
   }
 
   return array(
-      a.shape(), a.dtype(), std::make_shared<Sort>(to_stream(s), axis), {a});
+      a.shape(),
+      a.dtype(),
+      std::make_shared<Sort>(to_stream(s), axis, comparator),
+      {a});
 }
 
 /** Returns indices that sort the flattened array. */
-array argsort(const array& a, StreamOrDevice s /* = {} */) {
+array argsort(
+    const array& a,
+    ComparatorType comparator,
+    StreamOrDevice s /* = {} */) {
   int size = a.size();
-  return argsort(reshape(a, {size}, s), 0, s);
+  return argsort(reshape(a, {size}, s), 0, comparator, s);
 }
 
 /** Returns indices that sort the array along a given axis. */
-array argsort(const array& a, int axis, StreamOrDevice s /* = {} */) {
+array argsort(
+    const array& a,
+    int axis,
+    ComparatorType comparator,
+    StreamOrDevice s /* = {} */) {
   // Check for valid axis
   if (axis + static_cast<int>(a.ndim()) < 0 ||
       axis >= static_cast<int>(a.ndim())) {
@@ -2243,16 +2260,23 @@ array argsort(const array& a, int axis, StreamOrDevice s /* = {} */) {
   }
 
   return array(
-      a.shape(), uint32, std::make_shared<ArgSort>(to_stream(s), axis), {a});
+      a.shape(),
+      uint32,
+      std::make_shared<ArgSort>(to_stream(s), axis, comparator),
+      {a});
 }
 
 /**
  * Returns a partitioned copy of the flattened array
  * such that the smaller kth elements are first.
  **/
-array partition(const array& a, int kth, StreamOrDevice s /* = {} */) {
+array partition(
+    const array& a,
+    int kth,
+    ComparatorType comparator,
+    StreamOrDevice s /* = {} */) {
   int size = a.size();
-  return partition(reshape(a, {size}, s), kth, 0, s);
+  return partition(reshape(a, {size}, s), kth, 0, comparator, s);
 }
 
 /**
@@ -2263,6 +2287,7 @@ array partition(
     const array& a,
     int kth,
     int axis,
+    ComparatorType comparator,
     StreamOrDevice s /* = {} */) {
   // Check for valid axis
   if (axis + static_cast<int>(a.ndim()) < 0 ||
@@ -2283,7 +2308,7 @@ array partition(
   return array(
       a.shape(),
       a.dtype(),
-      std::make_shared<Partition>(to_stream(s), kth_, axis_),
+      std::make_shared<Partition>(to_stream(s), kth_, axis_, comparator),
       {a});
 }
 
@@ -2291,9 +2316,13 @@ array partition(
  * Returns indices that partition the flattened array
  * such that the smaller kth elements are first.
  **/
-array argpartition(const array& a, int kth, StreamOrDevice s /* = {} */) {
+array argpartition(
+    const array& a,
+    int kth,
+    ComparatorType comparator,
+    StreamOrDevice s /* = {} */) {
   int size = a.size();
-  return argpartition(reshape(a, {size}, s), kth, 0, s);
+  return argpartition(reshape(a, {size}, s), kth, 0, comparator, s);
 }
 
 /**
@@ -2304,6 +2333,7 @@ array argpartition(
     const array& a,
     int kth,
     int axis,
+    ComparatorType comparator,
     StreamOrDevice s /* = {} */) {
   // Check for valid axis
   if (axis + static_cast<int>(a.ndim()) < 0 ||
@@ -2324,7 +2354,7 @@ array argpartition(
   return array(
       a.shape(),
       uint32,
-      std::make_shared<ArgPartition>(to_stream(s), kth_, axis_),
+      std::make_shared<ArgPartition>(to_stream(s), kth_, axis_, comparator),
       {a});
 }
 

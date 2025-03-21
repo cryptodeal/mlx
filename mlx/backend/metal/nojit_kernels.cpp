@@ -96,7 +96,8 @@ MTL::ComputePipelineState* get_sort_kernel(
     const array&,
     const array&,
     int,
-    int) {
+    int,
+    const std::string&) {
   return d.get_kernel(kernel_name);
 }
 
@@ -106,7 +107,8 @@ MTL::ComputePipelineState* get_mb_sort_kernel(
     const array&,
     const array&,
     int,
-    int) {
+    int,
+    const std::string&) {
   return d.get_kernel(kernel_name);
 }
 

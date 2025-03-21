@@ -9,3 +9,15 @@ cc_binary(
     srcs = ["scatter.cpp"],
     deps = ["@mlx//:libmlx", "@range-v3"]
 )
+
+cc_binary(
+    name = "sort",
+    srcs = ["sort.cpp"],
+    deps = ["@mlx//:libmlx", "@range-v3"]
+)
+
+cc_binary(
+    name = "basic_sort",
+    srcs = ["basic_sort.cpp"],
+    deps = ["@mlx//:libmlx", "@range-v3"]
+)

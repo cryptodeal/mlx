@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "mlx/array.h"
+#include "mlx/backend/common/sort.h"
 #include "mlx/device.h"
 #include "mlx/stream.h"
 #include "mlx/utils.h"
@@ -674,40 +675,98 @@ array argmax(
     StreamOrDevice s = {});
 
 /** Returns a sorted copy of the flattened array. */
-array sort(const array& a, StreamOrDevice s = {});
+array sort(
+    const array& a,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array sort(const array& a, StreamOrDevice s = {}) {
+  return sort(a, ComparatorType::LessThan, s);
+}
 
 /** Returns a sorted copy of the array along a given axis. */
-array sort(const array& a, int axis, StreamOrDevice s = {});
+array sort(
+    const array& a,
+    int axis,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array sort(const array& a, int axis, StreamOrDevice s = {}) {
+  return sort(a, axis, ComparatorType::LessThan, s);
+}
 
 /** Returns indices that sort the flattened array. */
-array argsort(const array& a, StreamOrDevice s = {});
+array argsort(
+    const array& a,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array argsort(const array& a, StreamOrDevice s = {}) {
+  return argsort(a, ComparatorType::LessThan, s);
+}
 
 /** Returns indices that sort the array along a given axis. */
-array argsort(const array& a, int axis, StreamOrDevice s = {});
+array argsort(
+    const array& a,
+    int axis,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array argsort(const array& a, int axis, StreamOrDevice s = {}) {
+  return argsort(a, axis, ComparatorType::LessThan, s);
+}
 
 /**
  * Returns a partitioned copy of the flattened array
  * such that the smaller kth elements are first.
  **/
-array partition(const array& a, int kth, StreamOrDevice s = {});
+array partition(
+    const array& a,
+    int kth,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array partition(const array& a, int kth, StreamOrDevice s = {}) {
+  return partition(a, kth, ComparatorType::LessThan, s);
+}
 
 /**
  * Returns a partitioned copy of the array along a given axis
  * such that the smaller kth elements are first.
  **/
-array partition(const array& a, int kth, int axis, StreamOrDevice s = {});
+array partition(
+    const array& a,
+    int kth,
+    int axis,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array
+partition(const array& a, int kth, int axis, StreamOrDevice s = {}) {
+  return partition(a, kth, axis, ComparatorType::LessThan, s);
+}
 
 /**
  * Returns indices that partition the flattened array
  * such that the smaller kth elements are first.
  **/
-array argpartition(const array& a, int kth, StreamOrDevice s = {});
+array argpartition(
+    const array& a,
+    int kth,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array argpartition(const array& a, int kth, StreamOrDevice s = {}) {
+  return argpartition(a, kth, ComparatorType::LessThan, s);
+}
 
 /**
  * Returns indices that partition the array along a given axis
  * such that the smaller kth elements are first.
  **/
-array argpartition(const array& a, int kth, int axis, StreamOrDevice s = {});
+array argpartition(
+    const array& a,
+    int kth,
+    int axis,
+    ComparatorType comparator = ComparatorType::LessThan,
+    StreamOrDevice s = {});
+inline array
+argpartition(const array& a, int kth, int axis, StreamOrDevice s = {}) {
+  return argpartition(a, kth, axis, ComparatorType::LessThan, s);
+}
 
 /** Returns topk elements of the flattened array. */
 array topk(const array& a, int k, StreamOrDevice s = {});
