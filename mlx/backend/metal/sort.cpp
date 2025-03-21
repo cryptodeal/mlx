@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "mlx/backend/common/compiled.h"
+#include "mlx/backend/common/sort.h"
 #include "mlx/backend/metal/copy.h"
 #include "mlx/backend/metal/device.h"
 #include "mlx/backend/metal/kernels.h"
@@ -20,7 +22,8 @@ void single_block_sort(
     int axis,
     int bn,
     int tn,
-    bool argsort) {
+    bool argsort,
+    ComparatorType comparator_) {
   // Prepare shapes
   int n_rows = in.size() / in.shape(axis);
 
@@ -58,9 +61,26 @@ void single_block_sort(
     kname << "arg";
   }
 
+  std::string comparator;
+  switch (comparator_) {
+    case ComparatorType::LessThan:
+      comparator = "LessThan";
+      break;
+    case ComparatorType::GreaterThan:
+      comparator = "GreaterThan";
+      break;
+  }
+
   kname << "_block_sort_" << type_to_name(in) << "_" << type_to_name(out)
-        << "_bn" << bn << "_tn" << tn;
-  auto kernel = get_sort_kernel(d, kname.str(), in, out, bn, tn);
+        << "_bn" << bn << "_tn" << tn << "_comp" << comparator;
+  auto kernel = get_sort_kernel(
+      d,
+      kname.str(),
+      in,
+      out,
+      bn,
+      tn,
+      comparator + "<" + get_type_string(in.dtype()) + ">");
 
   // Prepare command encoder
   auto& compute_encoder = d.get_command_encoder(s.index);
@@ -120,7 +140,8 @@ void multi_block_sort(
     int bn,
     int tn,
     int n_blocks,
-    bool argsort) {
+    bool argsort,
+    ComparatorType comparator_) {
   // Prepare shapes
   int n_rows = in.size() / in.shape(axis);
 
@@ -160,6 +181,16 @@ void multi_block_sort(
   std::vector<array> copies = {
       dev_vals_0, dev_vals_1, dev_idxs_0, dev_idxs_1, block_partitions};
 
+  std::string comparator;
+  switch (comparator_) {
+    case ComparatorType::LessThan:
+      comparator = "LessThan";
+      break;
+    case ComparatorType::GreaterThan:
+      comparator = "GreaterThan";
+      break;
+  }
+
   // Prepare command encoder
   auto& compute_encoder = d.get_command_encoder(s.index);
 
@@ -167,9 +198,16 @@ void multi_block_sort(
   {
     std::ostringstream kname;
     kname << "sort_mbsort_" << type_to_name(dev_vals_0) << "_"
-          << type_to_name(dev_idxs_0) << "_bn" << bn << "_tn" << tn;
-    auto kernel =
-        get_mb_sort_kernel(d, kname.str(), dev_vals_0, dev_idxs_0, bn, tn);
+          << type_to_name(dev_idxs_0) << "_bn" << bn << "_tn" << tn << "_comp"
+          << comparator;
+    auto kernel = get_mb_sort_kernel(
+        d,
+        kname.str(),
+        dev_vals_0,
+        dev_idxs_0,
+        bn,
+        tn,
+        comparator + "<" + get_type_string(in.dtype()) + ">");
     compute_encoder.set_compute_pipeline_state(kernel);
 
     compute_encoder.set_input_array(in, 0);
@@ -207,10 +245,17 @@ void multi_block_sort(
     {
       std::ostringstream kname;
       kname << "partition_mbsort_" << type_to_name(dev_vals_in) << "_"
-            << type_to_name(dev_idxs_in) << "_bn" << bn << "_tn" << tn;
+            << type_to_name(dev_idxs_in) << "_bn" << bn << "_tn" << tn
+            << "_comp" << comparator;
 
-      auto kernel =
-          get_mb_sort_kernel(d, kname.str(), dev_vals_0, dev_idxs_0, bn, tn);
+      auto kernel = get_mb_sort_kernel(
+          d,
+          kname.str(),
+          dev_vals_0,
+          dev_idxs_0,
+          bn,
+          tn,
+          comparator + "<" + get_type_string(in.dtype()) + ">");
       compute_encoder.set_compute_pipeline_state(kernel);
 
       compute_encoder.set_output_array(block_partitions, 0);
@@ -230,10 +275,17 @@ void multi_block_sort(
     {
       std::ostringstream kname;
       kname << "merge_mbsort_" << type_to_name(dev_vals_in) << "_"
-            << type_to_name(dev_idxs_in) << "_bn" << bn << "_tn" << tn;
+            << type_to_name(dev_idxs_in) << "_bn" << bn << "_tn" << tn
+            << "_comp" << comparator;
 
-      auto kernel =
-          get_mb_sort_kernel(d, kname.str(), dev_vals_0, dev_idxs_0, bn, tn);
+      auto kernel = get_mb_sort_kernel(
+          d,
+          kname.str(),
+          dev_vals_0,
+          dev_idxs_0,
+          bn,
+          tn,
+          comparator + "<" + get_type_string(in.dtype()) + ">");
       compute_encoder.set_compute_pipeline_state(kernel);
 
       compute_encoder.set_input_array(block_partitions, 0);
@@ -278,7 +330,8 @@ void gpu_merge_sort(
     const array& in,
     array& out,
     int axis_,
-    bool argsort) {
+    bool argsort,
+    ComparatorType comparator) {
   // Get size info
   int axis = axis_ < 0 ? axis_ + in.ndim() : axis_;
   int size_sorted_axis = in.shape(axis);
@@ -308,9 +361,10 @@ void gpu_merge_sort(
   int n_blocks = (size_sorted_axis + n_per_block - 1) / n_per_block;
 
   if (n_blocks > 1) {
-    return multi_block_sort(s, d, in, out, axis, bn, tn, n_blocks, argsort);
+    return multi_block_sort(
+        s, d, in, out, axis, bn, tn, n_blocks, argsort, comparator);
   } else {
-    return single_block_sort(s, d, in, out, axis, bn, tn, argsort);
+    return single_block_sort(s, d, in, out, axis, bn, tn, argsort, comparator);
   }
 }
 
@@ -325,7 +379,7 @@ void ArgSort::eval_gpu(const std::vector<array>& inputs, array& out) {
   auto& d = metal::device(s.device);
   auto& in = inputs[0];
 
-  gpu_merge_sort(s, d, in, out, axis_, true);
+  gpu_merge_sort(s, d, in, out, axis_, true, comparator_);
 }
 
 void Sort::eval_gpu(const std::vector<array>& inputs, array& out) {
@@ -337,7 +391,7 @@ void Sort::eval_gpu(const std::vector<array>& inputs, array& out) {
   auto& d = metal::device(s.device);
   auto& in = inputs[0];
 
-  gpu_merge_sort(s, d, in, out, axis_, false);
+  gpu_merge_sort(s, d, in, out, axis_, false, comparator_);
 }
 
 void ArgPartition::eval_gpu(const std::vector<array>& inputs, array& out) {
@@ -350,7 +404,7 @@ void ArgPartition::eval_gpu(const std::vector<array>& inputs, array& out) {
   auto& d = metal::device(s.device);
   auto& in = inputs[0];
 
-  gpu_merge_sort(s, d, in, out, axis_, true);
+  gpu_merge_sort(s, d, in, out, axis_, true, comparator_);
 }
 
 void Partition::eval_gpu(const std::vector<array>& inputs, array& out) {
@@ -363,7 +417,7 @@ void Partition::eval_gpu(const std::vector<array>& inputs, array& out) {
   auto& d = metal::device(s.device);
   auto& in = inputs[0];
 
-  gpu_merge_sort(s, d, in, out, axis_, false);
+  gpu_merge_sort(s, d, in, out, axis_, false, comparator_);
 }
 
 } // namespace mlx::core

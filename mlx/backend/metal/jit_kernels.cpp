@@ -307,7 +307,8 @@ MTL::ComputePipelineState* get_sort_kernel(
     const array& in,
     const array& out,
     int bn,
-    int tn) {
+    int tn,
+    const std::string& comparator) {
   std::string lib_name = kernel_name.substr(kernel_name.find("_") + 1);
   auto lib = d.get_library(lib_name, [&]() {
     std::ostringstream kernel_source;
@@ -324,7 +325,8 @@ MTL::ComputePipelineState* get_sort_kernel(
           out_type,
           bool_string,
           bn,
-          tn);
+          tn,
+          comparator);
       kernel_source << get_template_definition(
           "n" + func_string + lib_name,
           "block_sort_nc",
@@ -332,7 +334,8 @@ MTL::ComputePipelineState* get_sort_kernel(
           out_type,
           bool_string,
           bn,
-          tn);
+          tn,
+          comparator);
     }
     return kernel_source.str();
   });
@@ -345,7 +348,8 @@ MTL::ComputePipelineState* get_mb_sort_kernel(
     const array& in,
     const array& idx,
     int bn,
-    int tn) {
+    int tn,
+    const std::string& comparator) {
   std::string lib_name = kernel_name.substr(kernel_name.find("_") + 1);
   auto lib = d.get_library(lib_name, [&]() {
     std::ostringstream kernel_source;
@@ -362,7 +366,8 @@ MTL::ComputePipelineState* get_mb_sort_kernel(
           get_type_string(idx.dtype()),
           "true",
           bn,
-          tn);
+          tn,
+          comparator);
     }
     return kernel_source.str();
   });

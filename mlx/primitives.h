@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include "mlx/array.h"
+#include "mlx/backend/common/sort.h"
 #include "mlx/device.h"
 #include "mlx/io/load.h"
 #include "mlx/stream.h"
@@ -322,8 +323,15 @@ class ArcTanh : public UnaryPrimitive {
 
 class ArgPartition : public UnaryPrimitive {
  public:
-  explicit ArgPartition(Stream stream, int kth, int axis)
-      : UnaryPrimitive(stream), kth_(kth), axis_(axis) {}
+  explicit ArgPartition(
+      Stream stream,
+      int kth,
+      int axis,
+      ComparatorType comparator)
+      : UnaryPrimitive(stream),
+        kth_(kth),
+        axis_(axis),
+        comparator_(comparator) {}
 
   void eval_cpu(const std::vector<array>& inputs, array& out) override;
   void eval_gpu(const std::vector<array>& inputs, array& out) override;
@@ -333,13 +341,14 @@ class ArgPartition : public UnaryPrimitive {
   DEFINE_PRINT(ArgPartition)
   DEFINE_INPUT_OUTPUT_SHAPE()
   bool is_equivalent(const Primitive& other) const override;
-  std::pair<int, int> state() const {
-    return {kth_, axis_};
+  auto state() const {
+    return std::make_tuple(kth_, axis_, comparator_);
   };
 
  private:
   int kth_;
   int axis_;
+  ComparatorType comparator_;
 };
 
 class ArgReduce : public UnaryPrimitive {
@@ -371,8 +380,8 @@ class ArgReduce : public UnaryPrimitive {
 
 class ArgSort : public UnaryPrimitive {
  public:
-  explicit ArgSort(Stream stream, int axis)
-      : UnaryPrimitive(stream), axis_(axis) {}
+  explicit ArgSort(Stream stream, int axis, ComparatorType comparator)
+      : UnaryPrimitive(stream), axis_(axis), comparator_(comparator) {}
 
   void eval_cpu(const std::vector<array>& inputs, array& out) override;
   void eval_gpu(const std::vector<array>& inputs, array& out) override;
@@ -381,12 +390,13 @@ class ArgSort : public UnaryPrimitive {
   DEFINE_PRINT(ArgSort)
   DEFINE_INPUT_OUTPUT_SHAPE()
   bool is_equivalent(const Primitive& other) const override;
-  int state() const {
-    return axis_;
+  auto state() const {
+    return std::make_pair(axis_, comparator_);
   };
 
  private:
   int axis_;
+  ComparatorType comparator_;
 };
 
 class AsType : public UnaryPrimitive {
@@ -1506,8 +1516,15 @@ class Pad : public UnaryPrimitive {
 
 class Partition : public UnaryPrimitive {
  public:
-  explicit Partition(Stream stream, int kth, int axis)
-      : UnaryPrimitive(stream), kth_(kth), axis_(axis) {}
+  explicit Partition(
+      Stream stream,
+      int kth,
+      int axis,
+      ComparatorType comparator)
+      : UnaryPrimitive(stream),
+        kth_(kth),
+        axis_(axis),
+        comparator_(comparator) {}
 
   void eval_cpu(const std::vector<array>& inputs, array& out) override;
   void eval_gpu(const std::vector<array>& inputs, array& out) override;
@@ -1518,12 +1535,13 @@ class Partition : public UnaryPrimitive {
   DEFINE_INPUT_OUTPUT_SHAPE()
   bool is_equivalent(const Primitive& other) const override;
   auto state() const {
-    return std::make_pair(kth_, axis_);
+    return std::make_tuple(kth_, axis_, comparator_);
   };
 
  private:
   int kth_;
   int axis_;
+  ComparatorType comparator_;
 };
 
 class Power : public UnaryPrimitive {
@@ -2035,8 +2053,8 @@ class Softmax : public UnaryPrimitive {
 
 class Sort : public UnaryPrimitive {
  public:
-  explicit Sort(Stream stream, int axis)
-      : UnaryPrimitive(stream), axis_(axis) {}
+  explicit Sort(Stream stream, int axis, ComparatorType comparator)
+      : UnaryPrimitive(stream), axis_(axis), comparator_(comparator) {}
 
   void eval_cpu(const std::vector<array>& inputs, array& out) override;
   void eval_gpu(const std::vector<array>& inputs, array& out) override;
@@ -2047,11 +2065,12 @@ class Sort : public UnaryPrimitive {
   DEFINE_INPUT_OUTPUT_SHAPE()
   bool is_equivalent(const Primitive& other) const override;
   auto state() const {
-    return axis_;
+    return std::make_pair(axis_, comparator_);
   }
 
  private:
   int axis_;
+  ComparatorType comparator_;
 };
 
 class Split : public Primitive {

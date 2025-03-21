@@ -74,7 +74,8 @@ MTL::ComputePipelineState* get_sort_kernel(
     const array& in,
     const array& out,
     int bn,
-    int tn);
+    int tn,
+    const std::string& comparator);
 
 MTL::ComputePipelineState* get_mb_sort_kernel(
     metal::Device& d,
@@ -82,7 +83,8 @@ MTL::ComputePipelineState* get_mb_sort_kernel(
     const array& in,
     const array& idx,
     int bn,
-    int tn);
+    int tn,
+    const std::string& comparator);
 
 MTL::ComputePipelineState* get_reduce_init_kernel(
     metal::Device& d,

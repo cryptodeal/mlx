@@ -11,8 +11,8 @@
 
 #include "mlx/backend/metal/device.h"
 #include "mlx/backend/metal/metal.h"
-#include "mlx/backend/metal/metal_path.h"
 #include "mlx/backend/metal/metal_impl.h"
+#include "mlx/backend/metal/metal_path.h"
 #include "mlx/backend/metal/utils.h"
 #include "mlx/utils.h"
 

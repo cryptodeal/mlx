@@ -28,6 +28,15 @@ struct LessThan {
   }
 };
 
+template <typename T>
+struct GreaterThan {
+  static constexpr constant T init = Limits<T>::min;
+
+  METAL_FUNC bool operator()(T a, T b) {
+    return a > b;
+  }
+};
+
 template <
     typename ValT,
     typename IdxT,
@@ -216,7 +225,7 @@ template <
     bool ARG_SORT,
     short BLOCK_THREADS,
     short N_PER_THREAD,
-    typename CompareOp = LessThan<T>>
+    typename CompareOp>
 struct KernelMergeSort {
   using ValT = T;
   using IdxT = uint;
@@ -278,7 +287,8 @@ template <
     typename U,
     bool ARG_SORT,
     short BLOCK_THREADS,
-    short N_PER_THREAD>
+    short N_PER_THREAD,
+    typename CompareOp = LessThan<T>>
 [[kernel, max_total_threads_per_threadgroup(BLOCK_THREADS)]] void block_sort(
     const device T* inp [[buffer(0)]],
     device U* out [[buffer(1)]],
@@ -290,7 +300,7 @@ template <
     uint3 tid [[threadgroup_position_in_grid]],
     uint3 lid [[thread_position_in_threadgroup]]) {
   using sort_kernel =
-      KernelMergeSort<T, U, ARG_SORT, BLOCK_THREADS, N_PER_THREAD>;
+      KernelMergeSort<T, U, ARG_SORT, BLOCK_THREADS, N_PER_THREAD, CompareOp>;
   using ValT = typename sort_kernel::ValT;
   using IdxT = typename sort_kernel::IdxT;
 
@@ -333,7 +343,8 @@ template <
     typename U,
     bool ARG_SORT,
     short BLOCK_THREADS,
-    short N_PER_THREAD>
+    short N_PER_THREAD,
+    typename CompareOp>
 [[kernel, max_total_threads_per_threadgroup(BLOCK_THREADS)]] void block_sort_nc(
     const device T* inp [[buffer(0)]],
     device U* out [[buffer(1)]],
@@ -347,7 +358,7 @@ template <
     uint3 tid [[threadgroup_position_in_grid]],
     uint3 lid [[thread_position_in_threadgroup]]) {
   using sort_kernel =
-      KernelMergeSort<T, U, ARG_SORT, BLOCK_THREADS, N_PER_THREAD>;
+      KernelMergeSort<T, U, ARG_SORT, BLOCK_THREADS, N_PER_THREAD, CompareOp>;
   using ValT = typename sort_kernel::ValT;
   using IdxT = typename sort_kernel::IdxT;
 
@@ -394,7 +405,7 @@ template <
     bool ARG_SORT,
     short BLOCK_THREADS,
     short N_PER_THREAD,
-    typename CompareOp = LessThan<ValT>>
+    typename CompareOp>
 struct KernelMultiBlockMergeSort {
   using block_merge_sort_t = BlockMergeSort<
       ValT,
@@ -476,7 +487,8 @@ template <
     typename IdxT,
     bool ARG_SORT,
     short BLOCK_THREADS,
-    short N_PER_THREAD>
+    short N_PER_THREAD,
+    typename CompareOp>
 [[kernel, max_total_threads_per_threadgroup(BLOCK_THREADS)]] void mb_block_sort(
     const device ValT* inp [[buffer(0)]],
     device ValT* out_vals [[buffer(1)]],
@@ -493,7 +505,8 @@ template <
       IdxT,
       ARG_SORT,
       BLOCK_THREADS,
-      N_PER_THREAD>;
+      N_PER_THREAD,
+      CompareOp>;
 
   auto block_idx = elem_to_loc(tid.y, nc_shape, nc_strides, nc_dim);
   inp += block_idx;
@@ -520,7 +533,8 @@ template <
     typename IdxT,
     bool ARG_SORT,
     short BLOCK_THREADS,
-    short N_PER_THREAD>
+    short N_PER_THREAD,
+    typename CompareOp>
 [[kernel]] void mb_block_partition(
     device IdxT* block_partitions [[buffer(0)]],
     const device ValT* dev_vals [[buffer(1)]],
@@ -536,7 +550,8 @@ template <
       IdxT,
       ARG_SORT,
       BLOCK_THREADS,
-      N_PER_THREAD>;
+      N_PER_THREAD,
+      CompareOp>;
 
   block_partitions += tid.y * tgp_dims.x;
   dev_vals += tid.y * size_sorted_axis;
@@ -573,7 +588,7 @@ template <
     bool ARG_SORT,
     short BLOCK_THREADS,
     short N_PER_THREAD,
-    typename CompareOp = LessThan<ValT>>
+    typename CompareOp>
 [[kernel, max_total_threads_per_threadgroup(BLOCK_THREADS)]] void
 mb_block_merge(
     const device IdxT* block_partitions [[buffer(0)]],

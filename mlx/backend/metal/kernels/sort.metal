@@ -6,24 +6,29 @@
 #include "mlx/backend/metal/kernels/utils.h"
 #include "mlx/backend/metal/kernels/sort.h"
 
+#define instantiate_comparator(name, type) \
+  name<type>
+
 #define instantiate_block_sort(                                          \
-    name, itname, itype, otname, otype, arg_sort, bn, tn)                \
-  instantiate_kernel("c" #name "_" #itname "_" #otname "_bn" #bn "_tn" #tn, \
-                     block_sort, itype, otype, arg_sort, bn, tn) \
-  instantiate_kernel("nc" #name "_" #itname "_" #otname "_bn" #bn "_tn" #tn, \
-                     block_sort_nc, itype, otype, arg_sort, bn, tn)
+    name, itname, itype, otname, otype, arg_sort, bn, tn, vcomparator)                \
+  instantiate_kernel("c" #name "_" #itname "_" #otname "_bn" #bn "_tn" #tn "_comp" #vcomparator, \
+                     block_sort, itype, otype, arg_sort, bn, tn, instantiate_comparator(vcomparator, itype)) \
+  instantiate_kernel("nc" #name "_" #itname "_" #otname "_bn" #bn "_tn" #tn "_comp" #vcomparator, \
+                     block_sort_nc, itype, otype, arg_sort, bn, tn, instantiate_comparator(vcomparator, itype))
 
-#define instantiate_arg_block_sort_base(itname, itype, bn, tn) \
+#define instantiate_arg_block_sort_base(itname, itype, bn, tn, comparator) \
   instantiate_block_sort(                                      \
-      arg_block_sort, itname, itype, uint32, uint32_t, true, bn, tn)
+      arg_block_sort, itname, itype, uint32, uint32_t, true, bn, tn, comparator)
 
-#define instantiate_block_sort_base(itname, itype, bn, tn) \
+#define instantiate_block_sort_base(itname, itype, bn, tn, comparator) \
   instantiate_block_sort(                                  \
-      _block_sort, itname, itype, itname, itype, false, bn, tn)
+      _block_sort, itname, itype, itname, itype, false, bn, tn, comparator)
 
 #define instantiate_block_sort_tn(itname, itype, bn) \
-  instantiate_block_sort_base(itname, itype, bn, 4)  \
-  instantiate_arg_block_sort_base(itname, itype, bn, 4)
+  instantiate_block_sort_base(itname, itype, bn, 4, LessThan)  \
+  instantiate_block_sort_base(itname, itype, bn, 4, GreaterThan)  \
+  instantiate_arg_block_sort_base(itname, itype, bn, 4, LessThan)  \
+  instantiate_arg_block_sort_base(itname, itype, bn, 4, GreaterThan)
 
 #define instantiate_block_sort_bn(itname, itype) \
   instantiate_block_sort_tn(itname, itype, 32)  \
@@ -52,16 +57,17 @@ instantiate_block_sort_long(uint64, uint64_t)
 instantiate_block_sort_long(int64, int64_t)
 
 #define instantiate_multi_block_sort(                                      \
-    vtname, vtype, itname, itype, arg_sort, bn, tn)                        \
-  instantiate_kernel("sort_mbsort_" #vtname "_" #itname "_bn" #bn "_tn" #tn, \
-                     mb_block_sort, vtype, itype, arg_sort, bn, tn) \
-  instantiate_kernel("partition_mbsort_" #vtname "_" #itname "_bn" #bn "_tn" #tn, \
-                     mb_block_partition, vtype, itype, arg_sort, bn, tn) \
-  instantiate_kernel("merge_mbsort_" #vtname "_" #itname "_bn" #bn "_tn" #tn, \
-                     mb_block_merge, vtype, itype, arg_sort, bn, tn)
+    vtname, vtype, itname, itype, arg_sort, bn, tn, vcomparator)                        \
+  instantiate_kernel("sort_mbsort_" #vtname "_" #itname "_bn" #bn "_tn" #tn "_comp" #vcomparator, \
+                     mb_block_sort, vtype, itype, arg_sort, bn, tn, instantiate_comparator(vcomparator, vtype)) \
+  instantiate_kernel("partition_mbsort_" #vtname "_" #itname "_bn" #bn "_tn" #tn "_comp" #vcomparator, \
+                     mb_block_partition, vtype, itype, arg_sort, bn, tn, instantiate_comparator(vcomparator, vtype)) \
+  instantiate_kernel("merge_mbsort_" #vtname "_" #itname "_bn" #bn "_tn" #tn "_comp" #vcomparator, \
+                     mb_block_merge, vtype, itype, arg_sort, bn, tn, instantiate_comparator(vcomparator, vtype))
 
 #define instantiate_multi_block_sort_base(vtname, vtype) \
-  instantiate_multi_block_sort(vtname, vtype, uint32, uint32_t, true, 512, 4)
+  instantiate_multi_block_sort(vtname, vtype, uint32, uint32_t, true, 512, 4, LessThan) \
+  instantiate_multi_block_sort(vtname, vtype, uint32, uint32_t, true, 512, 4, GreaterThan)
 
 instantiate_multi_block_sort_base(uint8, uint8_t)
 instantiate_multi_block_sort_base(uint16, uint16_t)
@@ -74,7 +80,8 @@ instantiate_multi_block_sort_base(float32, float)
 instantiate_multi_block_sort_base(bfloat16, bfloat16_t)
 
 #define instantiate_multi_block_sort_long(vtname, vtype) \
-  instantiate_multi_block_sort(vtname, vtype, uint32, uint32_t, true, 256, 4)
+  instantiate_multi_block_sort(vtname, vtype, uint32, uint32_t, true, 256, 4, LessThan) \
+  instantiate_multi_block_sort(vtname, vtype, uint32, uint32_t, true, 256, 4, GreaterThan)
 
 instantiate_multi_block_sort_long(uint64, uint64_t)
 instantiate_multi_block_sort_long(int64, int64_t) // clang-format on
