@@ -122,6 +122,14 @@ inline array normal(
   return normal(shape, float32, 0.0, 1.0, key, s);
 }
 
+array normal(
+    const Shape& shape,
+    Dtype dtype,
+    const array& loc,
+    const array& scale,
+    const std::optional<array>& key = std::nullopt,
+    StreamOrDevice s = {});
+
 /** Generate samples from a multivariate normal distribution. **/
 array multivariate_normal(
     const array& mean,

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 #include <range/v3/view/cartesian_product.hpp>
@@ -108,13 +109,14 @@ std::vector<mx::array> stablehlo_scatter(
     bool indices_are_sorted,
     bool indices_are_unique,
     const std::vector<int32_t>& result_shape) {
-  std::vector<mx::array> res = inputs;
+  std::vector<mx::array> input_indices;
+  std::vector<mx::array> update_indices;
+
   // iterate over updates[0] index space
   for (const auto update_index_tuple : index_space(updates[0].shape())) {
     std::vector<int32_t> update_index =
         to_vector(update_index_tuple, static_cast<size_t>(updates[0].ndim()));
-
-    printVector("update_index", update_index); // DEBUG
+    
 
     // Calculate update scatter dims
     std::vector<int32_t> update_scatter_dims;
@@ -133,8 +135,6 @@ std::vector<mx::array> stablehlo_scatter(
       update_scatter_index[i] = update_index[update_scatter_dims[i]];
     }
 
-    printVector("update_scatter_index", update_scatter_index, true); // DEBUG
-
     // Slice start index
     std::vector<int32_t> sin_start = update_scatter_index;
     std::vector<int32_t> sin_stop = update_scatter_index;
@@ -149,11 +149,9 @@ std::vector<mx::array> stablehlo_scatter(
     mx::array start_index =
         mx::flatten(mx::slice(scatter_indices, sin_start, sin_stop));
 
-    std::cout << "\tstart_index: " << start_index << std::endl; // DEBUG
-
     // Compute full start index
     mx::array full_start_index =
-        mx::zeros({static_cast<int>(inputs[0].ndim())});
+        mx::zeros({static_cast<int>(inputs[0].ndim())}, mx::int32);
     for (auto i = 0; i < scatter_dims_to_operand_dims.size(); i++) {
       auto d_input = static_cast<int32_t>(scatter_dims_to_operand_dims[i]);
       full_start_index = mx::slice_update(
@@ -162,12 +160,10 @@ std::vector<mx::array> stablehlo_scatter(
           {d_input},
           {d_input + 1});
     }
-    std::cout << "\tfull_start_index: " << full_start_index
-              << std::endl; // DEBUG
 
     // Compute full batching index
     mx::array full_batching_index =
-        mx::zeros({static_cast<int>(inputs[0].ndim())});
+        mx::zeros({static_cast<int>(inputs[0].ndim())}, mx::int32);
     for (auto i = 0; i < input_batching_dims.size(); i++) {
       int32_t d_input = input_batching_dims[i];
       int32_t d_start = scatter_indices_batching_dims[i];
@@ -178,8 +174,6 @@ std::vector<mx::array> stablehlo_scatter(
           {d_input},
           {d_input + 1});
     }
-    std::cout << "\tfull_batching_index: " << full_batching_index
-              << std::endl; // DEBUG
 
     // Compute update window index
     std::vector<int32_t> update_window_index(update_window_dims.size());
@@ -188,9 +182,11 @@ std::vector<mx::array> stablehlo_scatter(
     }
 
     // Compute full window index
-    mx::array full_window_index = mx::zeros({static_cast<int32_t>(
-        update_window_index.size() + inserted_window_dims.size() +
-        input_batching_dims.size())});
+    mx::array full_window_index = mx::zeros(
+        {static_cast<int32_t>(
+            update_window_index.size() + inserted_window_dims.size() +
+            input_batching_dims.size())},
+        mx::int32);
     unsigned update_window_index_count = 0;
     for (int32_t i = 0; i < full_window_index.size(); i++) {
       if (std::find(
@@ -207,14 +203,15 @@ std::vector<mx::array> stablehlo_scatter(
           {i},
           {i + 1});
     }
-    std::cout << "\tfull_window_index: " << full_window_index
-              << std::endl; // DEBUG
 
     // Compute result index
     mx::array result_index =
         full_start_index + full_batching_index + full_window_index;
-    std::cout << "\tresult_index: " << result_index << std::endl; // DEBUG
+    
 
+    // TODO(@cryptodeal): need to implement so that this can
+    // be checked without calling `mx::eval` (or ensure zml prevents
+    // this from occurring)
     // Continue if result index is out of bounds
     if (mx::sum(
             result_index >=
@@ -222,13 +219,42 @@ std::vector<mx::array> stablehlo_scatter(
                 reinterpret_cast<const int32_t*>(result_shape.data()),
                 {static_cast<int32_t>(result_shape.size())}))
             .item<int32_t>()) {
-      std::cout << "\tresult_index out of bounds" << std::endl; // DEBUG
       continue;
     }
-    // for (auto& r : res) {
-    //   r = mx::slice_update()
-    // }
+    input_indices.push_back(result_index);
+    update_indices.push_back(
+        mx::array(update_index.data(), {static_cast<int>(updates[0].ndim())}));
   }
+  if (update_indices.empty()) {
+    return inputs;
+  }
+
+  std::vector<int32_t> scatter_axes(inputs[0].ndim());
+  std::iota(scatter_axes.begin(), scatter_axes.end(), 0);
+  std::vector<int32_t> gather_axes(updates[0].ndim());
+  std::iota(gather_axes.begin(), gather_axes.end(), 0);
+  std::vector<int32_t> gather_slice_sizes(updates[0].ndim(), 1);
+  std::vector<mx::array> res;
+  auto result_indices =
+      mx::split(mx::stack(input_indices, 1), input_indices[0].shape(0), 0);
+  auto gather_indices =
+      mx::split(mx::stack(update_indices, 1), update_indices[0].shape(0), 0);
+  auto idx_shape = gather_indices[0].shape();
+  printVector("gather_indices shape", idx_shape);
+  std::vector<int32_t> update_shape(inputs[0].ndim() + idx_shape.size(), 1);
+  for (auto i = 0; i < idx_shape.size(); ++i) {
+    update_shape[i] = idx_shape[i];
+  }
+  for (auto i = 0; i < inputs.size(); ++i) {
+    auto update_vals = mx::reshape(mx::gather(updates[i], gather_indices, gather_axes, gather_slice_sizes), update_shape);
+    printVector("update_vals shape", update_vals.shape());
+    res.push_back(mx::scatter_add(
+        inputs[i],
+        result_indices,
+       update_vals,
+        scatter_axes));
+  }
+
   return res;
 }
 

@@ -198,6 +198,23 @@ array normal(
   return samples;
 }
 
+array normal(
+    const Shape& shape,
+    Dtype dtype,
+    const array& loc,
+    const array& scale,
+    const std::optional<array>& key /*= nullopt */,
+    StreamOrDevice s /* = {} */) {
+  auto stream = to_stream(s);
+  auto low = above_minus_one_with_default(dtype);
+  auto high = array(1.0f, dtype);
+  auto samples = uniform(low, high, shape, dtype, key, stream);
+  samples = multiply(array(std::sqrt(2.0), dtype), erfinv(samples, stream), stream);
+  samples = multiply(astype(scale, dtype), samples, stream);
+  samples = add(astype(loc, dtype), samples, stream);
+  return samples;
+}
+
 array multivariate_normal(
     const array& mean,
     const array& cov,

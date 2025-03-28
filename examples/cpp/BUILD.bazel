@@ -1,23 +1,11 @@
 cc_binary(
-    name = "gather",
-    srcs = ["gather.cpp"],
-    deps = ["@mlx//:libmlx", "@range-v3"]
+    name = "compile",
+    srcs = ["scatter.cpp"],
+    deps = ["@mlx//:mlx", "@range-v3"]
 )
 
 cc_binary(
     name = "scatter",
     srcs = ["scatter.cpp"],
-    deps = ["@mlx//:libmlx", "@range-v3"]
-)
-
-cc_binary(
-    name = "sort",
-    srcs = ["sort.cpp"],
-    deps = ["@mlx//:libmlx", "@range-v3"]
-)
-
-cc_binary(
-    name = "basic_sort",
-    srcs = ["basic_sort.cpp"],
-    deps = ["@mlx//:libmlx", "@range-v3"]
+    deps = ["@mlx//:mlx", "@range-v3"]
 )
