@@ -10,8 +10,8 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 """,
-        sha256 = "d0a7990f43c7ce666036b5649283c9965df2f19a4a41570af0617bbe93b4a6e5",
-        url = "https://developer.apple.com/metal/cpp/files/metal-cpp_macOS15_iOS18-beta.zip",
+        sha256 = "0433df1e0ab13c2b0becbd78665071e3fa28381e9714a3fce28a497892b8a184",
+        url = "https://developer.apple.com/metal/cpp/files/metal-cpp_macOS15_iOS18.zip",
     )
     return mctx.extension_metadata(
         reproducible = True,

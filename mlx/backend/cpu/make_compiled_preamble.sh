@@ -7,13 +7,17 @@
 
 
 OUTPUT_FILE=$1
-GCC=$2
-SRCDIR=$3
-CLANG=$4
-ARCH=$5
+HDR_FILE=$(realpath $2)
 
-if [ "$CLANG" = "TRUE" ]; then
-  read -r -d '' INCLUDES <<- EOM
+ARCH=$(uname -m)
+
+CPUDIR=$(dirname $HDR_FILE)
+# echo "CPUDIR: $CPUDIR"
+SRCDIR=$(echo "$CPUDIR" | cut -d'/' -f-$(($(echo "$CPUDIR" | awk -F'/' '{print NF}')-3)))
+# echo "SRCDIR: $SRCDIR"
+
+
+read -r -d '' INCLUDES <<- EOM
 #include <cmath>
 #include <complex>
 #include <cstdint>
@@ -23,11 +27,8 @@ if [ "$CLANG" = "TRUE" ]; then
 #endif
 EOM
 CC_FLAGS="-arch ${ARCH} -nobuiltininc -nostdinc"
-else
-CC_FLAGS="-std=c++17"
-fi
 
-CONTENT=$($GCC $CC_FLAGS -I "$SRCDIR" -E -P "$SRCDIR/mlx/backend/cpu/compiled_preamble.h" 2>/dev/null)
+CONTENT=$(clang $CC_FLAGS -I "$SRCDIR" -E -P "$HDR_FILE" 2>/dev/null)
 
 cat << EOF > "$OUTPUT_FILE"
 const char* get_kernel_preamble() {

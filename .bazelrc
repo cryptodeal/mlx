@@ -1,1 +1,6 @@
 build           --cxxopt='-std=c++17'
+
+# Sets the MLX debug flag (for capturing Metal traces)
+# build --define=MLX_METAL_DEBUG=ON
+# run --define=MLX_METAL_DEBUG=ON
+

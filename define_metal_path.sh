@@ -1,9 +1,0 @@
-#!/bin/bash
-RELATIVE_PATH=$1
-OUTPUT_FILE=$2
-
-ABSOLUTE_PATH=$(realpath $RELATIVE_PATH)
-
-cat << EOF > "$OUTPUT_FILE"
-#define METAL_PATH "$ABSOLUTE_PATH";
-EOF

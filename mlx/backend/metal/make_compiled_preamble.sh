@@ -5,18 +5,21 @@
 #
 # Copyright © 2023-24 Apple Inc.
 
-OUTPUT_DIR=$1
-CC=$2
-SRC_DIR=$3
-SRC_FILE=$4
-CFLAGS=$5
-SRC_NAME=$(basename -- "${SRC_FILE}")
-JIT_INCLUDES=${SRC_DIR}/mlx/backend/metal/kernels/jit
-INPUT_FILE=${SRC_DIR}/mlx/backend/metal/kernels/${SRC_FILE}.h
-OUTPUT_FILE=${OUTPUT_DIR}/${SRC_NAME}.cpp
+OUTPUT_FILE=$1
+INPUT_FILE=$2
+CFLAGS=$3
 
-mkdir -p "$OUTPUT_DIR"
-CONTENT=$($CC -I"$SRC_DIR" -I"$JIT_INCLUDES" -DMLX_METAL_JIT -E -P "$INPUT_FILE" $CFLAGS 2>/dev/null)
+KERNEL_DIR=$(dirname $(realpath $INPUT_FILE))
+# echo "KERNEL_DIR: $KERNEL_DIR"
+SRC_DIR=$(echo "$KERNEL_DIR" | cut -d'/' -f-$(($(echo "$KERNEL_DIR" | awk -F'/' '{print NF}')-4)))
+# echo "SRC_DIR: $SRC_DIR"
+JIT_INCLUDES="$KERNEL_DIR/jit"
+# echo "JIT_INCLUDES: $JIT_INCLUDES"
+
+SRC_BASENAME=$(basename -- "${INPUT_FILE}")
+SRC_NAME="${SRC_BASENAME%.*}"
+
+CONTENT=$(clang -I"$SRC_DIR" -I"$JIT_INCLUDES" -DMLX_METAL_JIT -E -P "$INPUT_FILE" $CFLAGS 2>/dev/null)
 
 cat << EOF > "$OUTPUT_FILE"
 namespace mlx::core::metal {
