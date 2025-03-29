@@ -8,6 +8,7 @@
 #include "mlx/backend/metal/kernels.h"
 #include "mlx/backend/metal/utils.h"
 #include "mlx/primitives.h"
+#include "mlx/sort.h"
 
 namespace mlx::core {
 

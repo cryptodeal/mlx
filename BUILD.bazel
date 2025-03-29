@@ -1,15 +1,39 @@
 load("@build_bazel_rules_apple//apple:resources.bzl", "apple_metal_library")
 load("//:jit/jit.bzl", "make_jit_source")
 
+filegroup(
+  name = "mlx_h",
+  srcs = glob(["mlx/*.h"], ["mlx/mlx.h"]),
+)
+
+# Contains `mlx/types/*.h` headers
+cc_library(
+    name = "types",
+    hdrs = glob(["mlx/types/*.h"]),
+)
+
+cc_library(
+    name = "pocketfft",
+    hdrs = [
+        "mlx/3rdparty/pocketfft.h",
+    ],
+)
+
 # mlx/distributed/ring/CMakeLists.txt
 cc_library(
     name = "ring",
     srcs = [
         "mlx/distributed/ring/no_ring.cpp",
+
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h",
         "mlx/distributed/distributed.h",
     ],
     hdrs = [
         "mlx/distributed/ring/ring.h",
+    ],
+    deps = [
+        ":types"
     ],
 )
 
@@ -20,10 +44,16 @@ cc_library(
     srcs = [
         "mlx/distributed/mpi/no_mpi.cpp",
         "mlx/distributed/distributed.h",
+
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h",
     ],
     hdrs = [
         "mlx/distributed/mpi/mpi.h",
     ],
+    deps = [
+        ":types",
+    ]
 )
 
 # mlx/distributed/CMakeLists.txt
@@ -33,23 +63,13 @@ cc_library(
         "mlx/distributed/primitives.cpp",
         "mlx/distributed/ops.cpp",
         "mlx/distributed/distributed.cpp",
-        "mlx/stream.h",
-        "mlx/utils.h",
-        "mlx/allocator.h",
-        "mlx/array.h",
-        "mlx/event.h",
-        "mlx/dtype.h",
-        "mlx/primitives.h",
-        "mlx/backend/common/sort.h",
-        "mlx/io/load.h",
-        "mlx/threadpool.h",
+
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h",
         "mlx/backend/common/utils.h",
-        "mlx/ops.h",
-        "mlx/types/bf16.h",
-        "mlx/types/complex.h",
-        "mlx/types/fp16.h",
-        "mlx/types/half_types.h",
-        "mlx/types/limits.h",
+        "mlx/backend/metal/metal.h",
+        "mlx/backend/metal/metal_impl.h",
+        "mlx/io/load.h",
     ],
     hdrs = [
         "mlx/distributed/distributed_impl.h",
@@ -60,6 +80,7 @@ cc_library(
     deps = [
         ":mpi",
         ":ring",
+        ":types",
     ]
 )
 
@@ -70,24 +91,15 @@ cc_library(
         "mlx/io/load.cpp",
         "mlx/io/no_safetensors.cpp",
         "mlx/io/no_gguf.cpp",
-        "mlx/io.h",
-        "mlx/ops.h",
-        "mlx/primitives.h",
-        "mlx/threadpool.h",
-        "mlx/utils.h",
-        "mlx/array.h",
-        "mlx/event.h",
-        "mlx/backend/common/sort.h",
-        "mlx/allocator.h",
-        "mlx/dtype.h",
-        "mlx/types/bf16.h",
-        "mlx/types/complex.h",
-        "mlx/types/fp16.h",
-        "mlx/types/half_types.h",
-        "mlx/types/limits.h",
+
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h",
     ],
     hdrs = [
         "mlx/io/load.h",
+    ],
+    deps = [
+        ":types",
     ],
 )
 
@@ -101,20 +113,10 @@ cc_library(
       "mlx/backend/common/reduce.cpp",
       "mlx/backend/common/slicing.cpp",
       "mlx/backend/common/utils.cpp",
-      "mlx/allocator.h",
-      "mlx/array.h",
-      "mlx/primitives.h",
-      "mlx/graph_utils.h",
-      "mlx/utils.h",
+
+      # Other sources (maybe reorganize dependencies?)
+      ":mlx_h",   
       "mlx/io/load.h",
-      "mlx/event.h",
-      "mlx/threadpool.h",
-      "mlx/dtype.h",
-      "mlx/types/bf16.h",
-      "mlx/types/complex.h",
-      "mlx/types/fp16.h",
-      "mlx/types/half_types.h",
-      "mlx/types/limits.h",
   ],
   hdrs = [
       "mlx/backend/common/binary.h",
@@ -124,10 +126,10 @@ cc_library(
       "mlx/backend/common/load.h",
       "mlx/backend/common/reduce.h",
       "mlx/backend/common/slicing.h",
-      "mlx/backend/common/sort.h",
       "mlx/backend/common/ternary.h",
       "mlx/backend/common/utils.h",
   ],
+  deps = [":types"],
 )
 
 # mlx/backend/cpu/CMakeLists.txt
@@ -143,6 +145,14 @@ genrule(
 # TODO (@cryptodeal): finish bazel config for cpu backend
 cc_library(
     name = "backend_cpu",
+    linkopts = [
+        "-framework",
+        "Accelerate",
+    ],
+    defines = [
+        "MLX_USE_ACCELERATE",
+        "ACCELERATE_NEW_LAPACK"
+    ],
     srcs = [
         "mlx/backend/cpu/arg_reduce.cpp",
         "mlx/backend/cpu/binary.cpp",
@@ -174,11 +184,41 @@ cc_library(
         # Not Building for IOS
         "mlx/backend/cpu/compiled.cpp",
         "mlx/backend/cpu/jit_compiler.cpp",
+        # Additional Header Sources
+        "mlx/backend/cpu/simd/simd.h",
+        "mlx/backend/cpu/simd/math.h",
+        "mlx/backend/cpu/simd/type.h",
+        "mlx/backend/cpu/simd/base_simd.h",
+        "mlx/backend/cpu/simd/accelerate_simd.h",
+        "mlx/backend/cpu/simd/accelerate_fp16_simd.h",
         # generated `compiled_preamble.cpp`
         ":compiled_preamble",
+        
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h",
+        "mlx/io/load.h",
     ],
     hdrs = [
-
+      "mlx/backend/cpu/arange.h",
+      "mlx/backend/cpu/binary_ops.h",
+      "mlx/backend/cpu/binary_two.h",
+      "mlx/backend/cpu/binary.h",
+      "mlx/backend/cpu/compiled_preamble.h",
+      "mlx/backend/cpu/copy.h",
+      "mlx/backend/cpu/gemm.h",
+      "mlx/backend/cpu/jit_compiler.h",
+      "mlx/backend/cpu/lapack.h",
+      "mlx/backend/cpu/slicing.h",
+      "mlx/backend/cpu/ternary.h",
+      "mlx/backend/cpu/threefry.h",
+      "mlx/backend/cpu/unary_ops.h",
+      "mlx/backend/cpu/unary.h",
+    ],
+    deps = [
+        "@fmt",
+        ":backend_common",
+        ":pocketfft",
+        ":types",
     ],
 )
 
@@ -188,22 +228,13 @@ cc_library(
     srcs = [
         "mlx/backend/no_cpu/primitives.cpp",
         "mlx/backend/no_cpu/compiled.cpp",
-        "mlx/compile_impl.h",
-        "mlx/primitives.h",
-        "mlx/fast_primitives.h",
-        "mlx/backend/common/sort.h",
-        "mlx/io/load.h",
-        "mlx/threadpool.h",
-        "mlx/device.h",
-        "mlx/array.h",
-        "mlx/event.h",
-        "mlx/allocator.h",
-        "mlx/dtype.h",
-        "mlx/types/bf16.h",
-        "mlx/types/complex.h",
-        "mlx/types/fp16.h",
-        "mlx/types/half_types.h",
-        "mlx/types/limits.h",
+
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h"
+    ],
+    deps = [
+        ":backend_common",
+        ":types",
     ],
 )
 
@@ -272,6 +303,14 @@ make_jit_source(
 
 cc_library(
     name = "backend_metal",
+    linkopts = [
+        "-framework",
+        "Metal",
+        "-framework",
+        "Foundation",
+        "-framework",
+        "QuartzCore",
+    ],
     srcs = [
         "mlx/backend/metal/allocator.cpp",
         "mlx/backend/metal/binary.cpp",
@@ -303,6 +342,14 @@ cc_library(
         "mlx/backend/metal/resident.cpp",
         "mlx/backend/metal/utils.cpp",
         "mlx/backend/metal/nojit_kernels.cpp",
+        # Additional Header Sources
+        "mlx/backend/metal/jit/arange.h",
+        "mlx/backend/metal/jit/indexing.h",
+        "mlx/backend/metal/jit/softmax.h",
+        "mlx/backend/metal/kernels/defines.h",
+        "mlx/backend/metal/kernels/steel/conv/params.h",
+        "mlx/backend/metal/kernels/steel/gemm/params.h",
+        "mlx/backend/metal/kernels/steel/attn/params.h",
         # Generate METAL_PATH define
         ":generate_metal_path",
         # Generated sources
@@ -316,45 +363,13 @@ cc_library(
         ":gather_axis",
         ":scatter_axis",
         ":hadamard",
-        # TODO (@cryptodeal): probably need to list some headers (as source) here
-        "mlx/event.h",
-        "mlx/array.h",
-        "mlx/backend/common/compiled.h",
-        "mlx/dtype.h",
-        "mlx/types/bf16.h",
-        "mlx/types/complex.h",
-        "mlx/types/fp16.h",
-        "mlx/types/half_types.h",
-        "mlx/types/limits.h",
-        "mlx/backend/common/binary.h",
-        "mlx/backend/common/copy.h",
-        "mlx/primitives.h",
-        "mlx/backend/common/sort.h",
-        "mlx/backend/common/ternary.h",
-        "mlx/io/load.h",
-        "mlx/backend/common/slicing.h",
-        "mlx/threadpool.h",
-        "mlx/allocator.h",
-        "mlx/backend/metal/kernels/steel/conv/params.h",
-        "mlx/utils.h",
-        "mlx/scheduler.h",
-        "mlx/fast_primitives.h",
-        "mlx/backend/common/utils.h",
+
+        # Other sources (maybe reorganize dependencies?)
+        ":mlx_h",
         "mlx/distributed/ops.h",
-        "mlx/graph_utils.h",
-        "mlx/backend/common/reduce.h",
         "mlx/distributed/distributed.h",
-        "mlx/backend/metal/kernels/defines.h",
         "mlx/distributed/primitives.h",
         "mlx/distributed/distributed_impl.h",
-        "mlx/backend/metal/jit/arange.h",
-        "mlx/backend/metal/jit/indexing.h",
-        "mlx/backend/metal/jit/softmax.h",
-        "mlx/stream.h",
-        "mlx/backend/metal/kernels/steel/gemm/params.h",
-        "mlx/backend/common/load.h",
-        "mlx/backend/common/hadamard.h",
-        "mlx/backend/metal/kernels/steel/attn/params.h"
     ],
     hdrs = [
         "mlx/backend/metal/allocator.h",
@@ -378,26 +393,20 @@ cc_library(
     deps = [
         "@metal_cpp//:metal_cpp",
         "@fmt",
-    ],
-)
-
-# MLX Types
-cc_library(
-    name = "types",
-    srcs = [
-        "mlx/types/bf16.h",
-        "mlx/types/complex.h",
-        "mlx/types/fp16.h",
-        "mlx/types/half_types.h",
-        "mlx/types/limits.h",
+        ":backend_common",
+        ":pocketfft",
     ],
 )
 
 genrule(
     name = "generate_metal_path",
-    outs = ["mlx/backend/metal/metal_path.h"],
+    outs = [
+        "mlx/backend/metal/metal_path.h",
+    ],
     cmd = "echo \"#define METAL_PATH \\\"`realpath $(location //:mlx_metallib)`\\\"\" > $@",
-    tools = ["//:mlx_metallib"],
+    tools = [
+      "//:mlx_metallib",
+    ],
 )
 
 # TODO (@cryptodeal): find a better solution than `copts` includes
@@ -407,8 +416,8 @@ apple_metal_library(
     copts = [
         "-Iexternal/mlx~",
         "-Iexternal/mlx~/mlx/backend/metal/kernels/metal_3_1",
-        "-I.",
-        "-Imlx/backend/metal/kernels/metal_3_1",
+        # "-I.",
+        # "-Imlx/backend/metal/kernels/metal_3_1",
         "-Wall",
         "-Wextra",
         "-fno-fast-math",
@@ -531,16 +540,9 @@ apple_metal_library(
 cc_library(
     name = "mlx",
     visibility = ["//visibility:public"],
-    linkopts = [
-        "-framework",
-        "Metal",
-        "-framework",
-        "Foundation",
-        "-framework",
-        "QuartzCore",
+    data = [
+        ":mlx_metallib",
     ],
-    # includes = ["@metal_cpp//:metal_cpp"],
-    data = [":mlx_metallib"],
     srcs = [
         "mlx/allocator.cpp",
         "mlx/array.cpp",
@@ -560,36 +562,10 @@ cc_library(
         "mlx/transforms.cpp",
         "mlx/utils.cpp",
         "mlx/version.cpp",
-        "mlx/backend/metal/metal.h",
+        ":mlx_h",
     ],
     hdrs = [
-        "mlx/allocator.h",
-        "mlx/array.h",
-        "mlx/compile_impl.h",
-        "mlx/compile.h",
-        "mlx/device.h",
-        "mlx/dtype.h",
-        "mlx/einsum.h",
-        "mlx/event.h",
-        "mlx/export_impl.h",
-        "mlx/export.h",
-        "mlx/fast_primitives.h",
-        "mlx/fast.h",
-        "mlx/fft.h",
-        "mlx/graph_utils.h",
-        "mlx/io.h",
-        "mlx/linalg.h",
         "mlx/mlx.h",
-        "mlx/ops.h",
-        "mlx/primitives.h",
-        "mlx/random.h",
-        "mlx/scheduler.h",
-        "mlx/stream.h",
-        "mlx/threadpool.h",
-        "mlx/transforms_impl.h",
-        "mlx/transforms.h",
-        "mlx/utils.h",
-        "mlx/version.h",
     ],
     deps = [
         ":io",
@@ -597,5 +573,8 @@ cc_library(
         ":backend_common",
         ":backend_metal",
         ":backend_no_cpu",
+        # TODO (@cryptodeal): enable cpu backend once changes to `sort`, and
+        # comparison ops have been made for parity with metal backend changes.
+        # ":backend_cpu",
     ],
 )

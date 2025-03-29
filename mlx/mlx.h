@@ -3,7 +3,6 @@
 #pragma once
 
 #include "mlx/array.h"
-#include "mlx/backend/common/sort.h"
 #include "mlx/backend/metal/metal.h"
 #include "mlx/compile.h"
 #include "mlx/device.h"
@@ -18,6 +17,7 @@
 #include "mlx/memory.h"
 #include "mlx/ops.h"
 #include "mlx/random.h"
+#include "mlx/sort.h"
 #include "mlx/stream.h"
 #include "mlx/transforms.h"
 #include "mlx/utils.h"
