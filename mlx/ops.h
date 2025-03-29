@@ -5,8 +5,8 @@
 #include <optional>
 
 #include "mlx/array.h"
-#include "mlx/backend/common/sort.h"
 #include "mlx/device.h"
+#include "mlx/sort.h"
 #include "mlx/stream.h"
 #include "mlx/utils.h"
 

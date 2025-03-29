@@ -3,12 +3,12 @@
 #include <algorithm>
 
 #include "mlx/backend/common/compiled.h"
-#include "mlx/backend/common/sort.h"
 #include "mlx/backend/metal/copy.h"
 #include "mlx/backend/metal/device.h"
 #include "mlx/backend/metal/kernels.h"
 #include "mlx/backend/metal/utils.h"
 #include "mlx/primitives.h"
+#include "mlx/sort.h"
 
 namespace mlx::core {
 

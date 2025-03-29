@@ -5,9 +5,9 @@
 #include <unordered_set>
 
 #include "mlx/array.h"
-#include "mlx/backend/common/sort.h"
 #include "mlx/device.h"
 #include "mlx/io/load.h"
+#include "mlx/sort.h"
 #include "mlx/stream.h"
 
 #define DEFINE_VMAP()                                                 \
