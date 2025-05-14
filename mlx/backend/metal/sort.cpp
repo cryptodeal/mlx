@@ -2,11 +2,11 @@
 
 #include <algorithm>
 
-#include "mlx/backend/common/sort.h"
 #include "mlx/backend/gpu/copy.h"
 #include "mlx/backend/metal/device.h"
 #include "mlx/backend/metal/kernels.h"
 #include "mlx/backend/metal/utils.h"
+#include "mlx/dtype_utils.h",
 #include "mlx/primitives.h"
 #include "mlx/sort.h"
 
@@ -80,7 +80,7 @@ void single_block_sort(
       out,
       bn,
       tn,
-      comparator + "<" + get_type_string(in.dtype()) + ">");
+      comparator + "<" + dtype_to_string(in.dtype()) + ">");
 
   // Prepare command encoder
   auto& compute_encoder = d.get_command_encoder(s.index);
@@ -206,7 +206,7 @@ void multi_block_sort(
         dev_idxs_0,
         bn,
         tn,
-        comparator + "<" + get_type_string(in.dtype()) + ">");
+        comparator + "<" + dtype_to_string(in.dtype()) + ">");
     compute_encoder.set_compute_pipeline_state(kernel);
 
     compute_encoder.set_input_array(in, 0);
@@ -254,7 +254,7 @@ void multi_block_sort(
           dev_idxs_0,
           bn,
           tn,
-          comparator + "<" + get_type_string(in.dtype()) + ">");
+          comparator + "<" + dtype_to_string(in.dtype()) + ">");
       compute_encoder.set_compute_pipeline_state(kernel);
 
       compute_encoder.set_output_array(block_partitions, 0);
@@ -284,7 +284,7 @@ void multi_block_sort(
           dev_idxs_0,
           bn,
           tn,
-          comparator + "<" + get_type_string(in.dtype()) + ">");
+          comparator + "<" + dtype_to_string(in.dtype()) + ">");
       compute_encoder.set_compute_pipeline_state(kernel);
 
       compute_encoder.set_input_array(block_partitions, 0);
