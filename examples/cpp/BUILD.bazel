@@ -1,6 +1,12 @@
 cc_binary(
-    name = "compile",
-    srcs = ["scatter.cpp"],
+    name = "debug_test_fails",
+    srcs = ["debug_test_fails.cpp"],
+    deps = ["@mlx//:mlx", "@range-v3"]
+)
+
+cc_binary(
+    name = "gather",
+    srcs = ["gather.cpp"],
     deps = ["@mlx//:mlx", "@range-v3"]
 )
 

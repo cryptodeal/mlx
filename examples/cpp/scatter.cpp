@@ -116,7 +116,6 @@ std::vector<mx::array> stablehlo_scatter(
   for (const auto update_index_tuple : index_space(updates[0].shape())) {
     std::vector<int32_t> update_index =
         to_vector(update_index_tuple, static_cast<size_t>(updates[0].ndim()));
-    
 
     // Calculate update scatter dims
     std::vector<int32_t> update_scatter_dims;
@@ -207,7 +206,6 @@ std::vector<mx::array> stablehlo_scatter(
     // Compute result index
     mx::array result_index =
         full_start_index + full_batching_index + full_window_index;
-    
 
     // TODO(@cryptodeal): need to implement so that this can
     // be checked without calling `mx::eval` (or ensure zml prevents
@@ -246,13 +244,12 @@ std::vector<mx::array> stablehlo_scatter(
     update_shape[i] = idx_shape[i];
   }
   for (auto i = 0; i < inputs.size(); ++i) {
-    auto update_vals = mx::reshape(mx::gather(updates[i], gather_indices, gather_axes, gather_slice_sizes), update_shape);
+    auto update_vals = mx::reshape(
+        mx::gather(updates[i], gather_indices, gather_axes, gather_slice_sizes),
+        update_shape);
     printVector("update_vals shape", update_vals.shape());
-    res.push_back(mx::scatter_add(
-        inputs[i],
-        result_indices,
-       update_vals,
-        scatter_axes));
+    res.push_back(
+        mx::scatter_add(inputs[i], result_indices, update_vals, scatter_axes));
   }
 
   return res;
