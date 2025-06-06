@@ -1,17 +1,23 @@
 cc_binary(
-    name = "debug_test_fails",
-    srcs = ["debug_test_fails.cpp"],
-    deps = ["@mlx//:mlx", "@range-v3"]
+    name = "tutorial",
+    srcs = ["tutorial.cpp"],
+    deps = ["@mlx//:mlx"]
 )
 
 cc_binary(
-    name = "gather",
-    srcs = ["gather.cpp"],
-    deps = ["@mlx//:mlx", "@range-v3"]
+    name = "linear_regression",
+    srcs = [
+        "linear_regression.cpp",
+        "timer.h",
+    ],
+    deps = ["@mlx//:mlx"]
 )
 
 cc_binary(
-    name = "scatter",
-    srcs = ["scatter.cpp"],
-    deps = ["@mlx//:mlx", "@range-v3"]
+    name = "logistic_regression",
+    srcs = [
+        "linear_regression.cpp",
+        "timer.h",
+    ],
+    deps = ["@mlx//:mlx"]
 )
