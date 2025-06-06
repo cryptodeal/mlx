@@ -116,6 +116,7 @@ cc_library(
   hdrs = [
       "mlx/backend/common/binary.h",
       "mlx/backend/common/broadcasting.h",
+      "mlx/backend/common/buffer_cache.h",
       "mlx/backend/common/compiled.h",
       "mlx/backend/common/copy.h",
       "mlx/backend/common/hadamard.h",
